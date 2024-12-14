@@ -1,0 +1,67 @@
++------------+         +-------------------+         +--------------+
+| GameServer |<------->|   ClientHandler   |<------->|    Client    |
++------------+         +-------------------+         +--------------+
+       |                        |
+       |                        |
+       |                        |
+       |                        v
+       |               +-------------------+
+       |               |    GameEngine     |
+       |               +-------------------+
+       |                        |
+       |                        v
+       |               +-------------------+
+       |               | CollisionDetector |
+       |               +-------------------+
+       |
+       v
++---------------------+
+| GameStateSerializer |
++---------------------+
+
+game-backend/
+├── src/
+│   ├── main/
+│   │   ├── java/
+│   │   │   └── com/
+│   │   │       └── yourgame/
+│   │   │           ├── GameServer.java
+│   │   │           ├── config/
+│   │   │           │   └── Config.java
+│   │   │           ├── controller/
+│   │   │           │   └── ClientHandler.java
+│   │   │           ├── engine/
+│   │   │           │   ├── GameEngine.java
+│   │   │           │   └── CollisionDetector.java
+│   │   │           ├── model/
+│   │   │           │   ├── Game.java
+│   │   │           │   ├── Player.java
+│   │   │           │   ├── Position.java
+│   │   │           │   ├── Hazard.java
+│   │   │           │   ├── Boost.java
+│   │   │           │   ├── Input.java
+│   │   │           │   └── PlayerAction.java
+│   │   │           ├── scheduler/
+│   │   │           │   └── Scheduler.java
+│   │   │           ├── serializer/
+│   │   │           │   └── GameStateSerializer.java
+│   │   │           └── utils/
+│   │   │               └── Logger.java
+│   │   └── resources/
+│   │       └── application.properties
+│   └── test/
+│       └── java/
+│           └── com/
+│               └── yourgame/
+│                   ├── GameEngineTest.java
+│                   ├── CollisionDetectorTest.java
+│                   └── PlayerTest.java
+├── lib/
+│   └── [External libraries if not using a build tool]
+├── build/
+│   └── [Build artifacts]
+├── scripts/
+│   └── deploy.sh
+├── pom.xml
+├── README.md
+└── .gitignore
