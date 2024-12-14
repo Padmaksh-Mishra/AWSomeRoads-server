@@ -1,5 +1,6 @@
 package org.example;
 
+import org.example.config.Config;
 import org.example.engine.GameEngine;
 import org.example.engine.Simulator;
 import org.example.model.Game;
