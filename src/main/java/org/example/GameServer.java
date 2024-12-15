@@ -1,5 +1,6 @@
 package org.example;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import org.example.config.Config;
 import org.example.engine.GameEngine;
 import org.example.engine.Simulator;
@@ -26,12 +27,12 @@ import java.util.concurrent.*;
  * - Running the main game loop to update and broadcast game state
  * - Declaring the winner when the game concludes
  */
+
 public class GameServer {
     private static final int PORT = 12345; // Example port number
     private static final int TICK_RATE = 100; // Game update interval in milliseconds
 
     private final Game game;
-    private final GameEngine gameEngine;
     private final Simulator simulator;
     private final GameStateSerializer serializer;
     private final Logger logger;
@@ -46,7 +47,7 @@ public class GameServer {
      */
     public GameServer() {
         this.game = new Game();
-        this.gameEngine = new GameEngine();
+        GameEngine gameEngine = new GameEngine();
         this.simulator = new Simulator(gameEngine);
         this.serializer = new GameStateSerializer();
         this.logger = new Logger();
@@ -78,7 +79,7 @@ public class GameServer {
                 clientThreadPool.execute(handler);
 
                 // Create a new Player and add to the game
-                Player player = new Player(playerIdCounter, playerIdCounter, 70, Config.HEALTH_MAX);
+                Player player = new Player(playerIdCounter, playerIdCounter, Config.PLAYER_START_Y, Config.HEALTH_MAX);
                 game.addPlayer(player);
                 logger.logInfo("Player " + player.getId() + " added with starting position (x=" + player.getX() + ", y=" + player.getY() + ")");
 
@@ -148,7 +149,7 @@ public class GameServer {
     /**
      * Checks if the game has concluded and declares the winner if conditions are met.
      */
-    private void checkGameOver() {
+    private void checkGameOver() throws JsonProcessingException {
         List<Player> activePlayers = new ArrayList<>();
         for (Player player : game.getPlayers()) {
             if (!player.isDisqualified()) {

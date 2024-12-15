@@ -1,5 +1,7 @@
 package org.example.model;
 
+import org.example.config.Config;
+
 import java.util.ArrayList;
 import java.util.List;
 
@@ -130,6 +132,7 @@ public class Game {
         return null;
     }
 
+
     /**
      * Retrieves a player at a specific position.
      *
@@ -137,7 +140,7 @@ public class Game {
      * @param y The y-coordinate.
      * @return The Player object at the specified position if found, otherwise null.
      */
-    public Player getPlayerAtPosition(int x, int y) {
+    public Player getPlayerAtPosition(int x, float y) {
         for (Player player : players) {
             if (player.getX() == x && player.getY() == y && !player.isDisqualified()) {
                 return player;
@@ -154,32 +157,7 @@ public class Game {
         latestInputs.clear();
     }
 
-    /**
-     * Removes a player from the game.
-     *
-     * @param player The Player object to remove.
-     */
-    public void removePlayer(Player player) {
-        players.remove(player);
-    }
 
-    /**
-     * Removes a hazard from the game.
-     *
-     * @param hazard The Hazard object to remove.
-     */
-    public void removeHazard(Hazard hazard) {
-        hazards.remove(hazard);
-    }
-
-    /**
-     * Removes a boost from the game.
-     *
-     * @param boost The Boost object to remove.
-     */
-    public void removeBoost(Boost boost) {
-        boosts.remove(boost);
-    }
 
     @Override
     public String toString() {

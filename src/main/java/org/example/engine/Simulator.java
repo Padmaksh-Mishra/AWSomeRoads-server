@@ -1,5 +1,6 @@
 package org.example.engine;
 
+import org.example.config.Config;
 import org.example.model.Game;
 import org.example.model.Hazard;
 import org.example.model.Boost;
@@ -8,6 +9,7 @@ import org.example.model.Input;
 import org.example.utils.Logger;
 
 import java.util.List;
+import java.util.Random;
 
 /**
  * This class will simulate the next 100ms of the game board.
@@ -18,9 +20,11 @@ import java.util.List;
  * - Removing disqualified players
  * - Checking for collisions between players and hazards or boosts
  */
+
 public class Simulator {
     private final GameEngine gameEngine;
     private final Logger logger = new Logger();
+    private final Random random = new Random();
 
     /**
      * Constructor to initialize the Simulator with a GameEngine instance.
@@ -38,16 +42,37 @@ public class Simulator {
      * @param inputs A list of inputs from all players.
      */
     public void simulateStep(Game game, List<Input> inputs) {
+        // Generate a new hazard based on HAZARD_PROBABILITY
+        if (random.nextFloat() < Config.HAZARD_PROBABILITY) {
+            Hazard newHazard = Hazard.generateHazard(game.getHazards().size());
+            if (newHazard != null) {
+                game.addHazard(newHazard);
+                logger.logInfo("Generated new Hazard " + newHazard.getId());
+            }
+        }
+
+        // Generate a new boost based on BOOST_PROBABILITY
+        if (random.nextFloat() < Config.BOOST_PROBABILITY) {
+            Boost newBoost = Boost.generateBoost(game.getBoosts().size());
+            if (newBoost != null) {
+                game.addBoost(newBoost);
+                logger.logInfo("Generated new Boost " + newBoost.getId());
+            }
+        }
+
         // Update positions of all hazards
         for (Hazard hazard : game.getHazards()) {
             hazard.updatePosition();
-            logger.logInfo("Hazard " + hazard.getId() + " moved to y=" + hazard.getY());
+            // Format y-coordinate to two decimal places
+            String formattedY = String.format("%.2f", hazard.getY());
+            logger.logInfo("Hazard " + hazard.getId() + " moved to y=" + formattedY);
         }
 
         // Update positions of all boosts
         for (Boost boost : game.getBoosts()) {
             boost.updatePosition();
-            logger.logInfo("Boost " + boost.getId() + " moved to y=" + boost.getY());
+            String formattedY = String.format("%.2f", boost.getY());
+            logger.logInfo("Boost " + boost.getId() + " moved to y=" + formattedY);
         }
 
         // Remove inactive hazards

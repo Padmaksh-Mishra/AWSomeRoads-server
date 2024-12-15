@@ -17,6 +17,11 @@ package org.example.config;
     - FALL_PENALTY: the penalty applied when a player falls
     - PLAYER_START_Y: the starting y-coordinate of a player
     - WINNING_X: the x-coordinate that a player needs to reach to win
+    - HAZARD_PROBABILITY: the probability of generating a new hazard
+    - BOOST_PROBABILITY: the probability of generating a new boost
+
+    - SIMULATION_STEP_SIZE: the time step for the simulation
+    - STEP_DOWN_SIZE: the step size for moving down
  */
 
 public class Config {
@@ -26,7 +31,6 @@ public class Config {
     public static final int MAX_HAZARDS = 10;
     public static final int MAX_BOOSTS = 5;
     public static final int HAZARD_DAMAGE = 20;
-    public static final int HAZARD_PENALTY = 10;
     public static final int BOOST_POWER = 15;
 
     public static final int HEALTH_MAX = 100;
@@ -34,4 +38,11 @@ public class Config {
     public static final int FALL_PENALTY = 10;
     public static final int PLAYER_START_Y = 70;
     public static final int WINNING_X = 0;
+
+    public static final float HAZARD_PROBABILITY = 0.1f; // Probability of generating a hazard per simulation step
+    public static final float BOOST_PROBABILITY = 0.05f; // Probability of generating a boost per simulation step
+
+    public static final float SIMULATION_STEP_SIZE = 0.10f; // Time step as float
+
+    public static final float STEP_DOWN_SIZE = 0.5f; // Step size for moving down
 }

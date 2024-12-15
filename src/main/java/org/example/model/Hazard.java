@@ -22,7 +22,7 @@ import java.util.Random;
 public class Hazard {
     private final int id;
     private int x;
-    private int y;
+    private float y; // Changed y from int to float
     private int damage;
     private boolean isActive;
 
@@ -53,7 +53,7 @@ public class Hazard {
         return x;
     }
 
-    public int getY() {
+    public float getY() {
         return y;
     }
 
@@ -70,7 +70,7 @@ public class Hazard {
         this.x = x;
     }
 
-    public void setY(int y) {
+    public void setY(float y) {
         this.y = y;
     }
 
@@ -101,7 +101,7 @@ public class Hazard {
      */
     public void updatePosition() {
         if (isActive) {
-            this.y += 1;
+            this.y += Config.SIMULATION_STEP_SIZE;
             if (this.y >= Config.Y_MAX) {
                 destroy();
             }
@@ -113,8 +113,6 @@ public class Hazard {
      */
     public void destroy() {
         this.isActive = false;
-        currentHazardCount--;
-        // Additional logic to remove the hazard from the game board can be added here
     }
 
     /**

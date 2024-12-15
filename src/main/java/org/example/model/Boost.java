@@ -20,7 +20,7 @@ import java.util.Random;
 public class Boost {
     private final int id;
     private int x;
-    private int y;
+    private float y; // Changed y from int to float
     private boolean isActive;
 
     private static final Random RANDOM = new Random();
@@ -48,7 +48,7 @@ public class Boost {
         return x;
     }
 
-    public int getY() {
+    public float getY() {
         return y;
     }
 
@@ -61,7 +61,7 @@ public class Boost {
         this.x = x;
     }
 
-    public void setY(int y) {
+    public void setY(float y) {
         this.y = y;
     }
 
@@ -90,7 +90,7 @@ public class Boost {
      */
     public void updatePosition() {
         if (isActive) {
-            this.y += 1;
+            this.y += Config.SIMULATION_STEP_SIZE;
             if (this.y >= Config.Y_MAX) {
                 destroy();
             }
@@ -102,8 +102,6 @@ public class Boost {
      */
     public void destroy() {
         this.isActive = false;
-        currentBoostCount--;
-        // Additional logic to remove the boost from the game board can be added here
     }
 
     /**

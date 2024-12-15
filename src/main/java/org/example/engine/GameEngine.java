@@ -69,7 +69,7 @@ public class GameEngine {
                         logger.logInfo("Player " + player.getId() + " moved right to x=" + player.getX());
                         break;
                     case STEP_DOWN:
-                        player.setY(Math.min(player.getY() + 1, Config.Y_MAX));
+                        player.setY(Math.min(player.getY() + Config.STEP_DOWN_SIZE, Config.Y_MAX)); // Use float
                         logger.logInfo("Player " + player.getId() + " stepped down to y=" + player.getY());
                         break;
                     default:
@@ -206,11 +206,9 @@ public class GameEngine {
      * @return True if colliding, false otherwise.
      */
     private boolean isColliding(Player player, Object entity) {
-        if (entity instanceof Hazard) {
-            Hazard hazard = (Hazard) entity;
+        if (entity instanceof Hazard hazard) {
             return player.getX() == hazard.getX() && player.getY() == hazard.getY();
-        } else if (entity instanceof Boost) {
-            Boost boost = (Boost) entity;
+        } else if (entity instanceof Boost boost) {
             return player.getX() == boost.getX() && player.getY() == boost.getY();
         }
         return false;

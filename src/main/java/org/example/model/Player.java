@@ -21,7 +21,7 @@ import org.example.config.Config;
 public class Player {
     private final int id;
     private int x;
-    private int y;
+    private float y; // Changed y from int to float
     private int health;
     private boolean disqualified;
 
@@ -33,7 +33,7 @@ public class Player {
      * @param y      The initial y-coordinate of the player.
      * @param health The initial health of the player.
      */
-    public Player(int id, int x, int y, int health) {
+    public Player(int id, int x, float y, int health) {
         this.id = id;
         this.x = x;
         this.y = y;
@@ -73,7 +73,7 @@ public class Player {
      *
      * @return The y-coordinate.
      */
-    public int getY() {
+    public float getY() {
         return y;
     }
 
@@ -82,7 +82,7 @@ public class Player {
      *
      * @param y The new y-coordinate.
      */
-    public void setY(int y) {
+    public void setY(float y) {
         this.y = y;
     }
 
