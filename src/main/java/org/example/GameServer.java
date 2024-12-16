@@ -11,26 +11,28 @@ import org.example.serializer.GameStateSerializer;
 import org.example.utils.Logger;
 import org.example.controller.ClientHandler;
 
-import java.io.IOException;
-import java.net.ServerSocket;
-import java.net.Socket;
+import java.net.InetSocketAddress;
 import java.util.*;
 import java.util.concurrent.*;
+import org.java_websocket.server.WebSocketServer;
+import org.java_websocket.WebSocket;
+import org.java_websocket.handshake.ClientHandshake;
 
 /**
- * This class serves as the main server for the game.
+ * This class serves as the main server for the game using WebSockets.
  *
  * Responsibilities include:
- * - Initializing server components (GameEngine, GameStateSerializer)
- * - Accepting client connections and creating ClientHandlers
+ * - Initializing server components ([GameEngine](src/main/java/org/example/engine/GameEngine.java), [GameStateSerializer](src/main/java/org/example/serializer/GameStateSerializer.java))
+ * - Accepting client connections and creating [ClientHandlers](src/main/java/org/example/controller/ClientHandler.java)
  * - Managing players and their inputs
  * - Running the main game loop to update and broadcast game state
  * - Declaring the winner when the game concludes
  */
 
-public class GameServer {
-    private static final int PORT = 12345; // Example port number
-    private static final int TICK_RATE = 100; // Game update interval in milliseconds
+public class GameServer extends WebSocketServer {
+    private static final int PORT = Config.PORT; // Example port number
+    private static final int TICK_RATE = Config.TICK_RATE; // Game update interval in milliseconds
+    private static final int MIN_PLAYERS = Config.MAX_PLAYERS; // Minimum players to start the game
 
     private final Game game;
     private final Simulator simulator;
@@ -39,13 +41,14 @@ public class GameServer {
     private final ExecutorService clientThreadPool;
     private final List<ClientHandler> clientHandlers;
     private final ScheduledExecutorService gameLoopExecutor;
-    private volatile boolean isRunning;
+    private volatile boolean gameStarted = false;
     private int playerIdCounter;
 
     /**
      * Constructor to initialize the GameServer.
      */
     public GameServer() {
+        super(new InetSocketAddress(PORT));
         this.game = new Game();
         GameEngine gameEngine = new GameEngine();
         this.simulator = new Simulator(gameEngine);
@@ -54,42 +57,106 @@ public class GameServer {
         this.clientThreadPool = Executors.newCachedThreadPool();
         this.clientHandlers = Collections.synchronizedList(new ArrayList<>());
         this.gameLoopExecutor = Executors.newSingleThreadScheduledExecutor();
-        this.isRunning = true;
         this.playerIdCounter = 0;
     }
 
     /**
-     * Starts the GameServer to accept client connections and run the game loop.
+     * Starts the WebSocket server.
      */
+    @Override
     public void start() {
-        try (ServerSocket serverSocket = new ServerSocket(PORT)) {
-            logger.logInfo("GameServer started on port " + PORT);
+        super.start();
+        logger.logInfo("GameServer started on port " + PORT);
+        // Game loop starts based on player connections
+    }
 
-            // Start the game loop
+    /**
+     * Handles new client connections.
+     *
+     * @param conn      The WebSocket connection.
+     * @param handshake The handshake data.
+     */
+    @Override
+    public void onOpen(WebSocket conn, ClientHandshake handshake) {
+        logger.logInfo("New client connected: " + conn.getRemoteSocketAddress());
+        // Assign a unique player ID
+        int playerId = playerIdCounter++;
+        // Create and start a new ClientHandler
+        ClientHandler handler = new ClientHandler(conn, this, playerId);
+        clientHandlers.add(handler);
+        clientThreadPool.execute(handler);
+
+        // Create a new Player and add to the game
+        Player player = new Player(playerId, playerId, Config.PLAYER_START_Y, Config.HEALTH_MAX);
+        game.addPlayer(player);
+        logger.logInfo("Player " + player.getId() + " added with starting position (x=" + player.getX() + ", y=" + player.getY() + ")");
+
+        // Check if the game should start
+        if (clientHandlers.size() >= MIN_PLAYERS && !gameStarted) {
+            gameStarted = true;
             startGameLoop();
+            logger.logInfo("Game loop started.");
+        }
+    }
 
-            // Accept client connections
-            while (isRunning) {
-                Socket clientSocket = serverSocket.accept();
-                logger.logInfo("New client connected: " + clientSocket.getInetAddress());
+    /**
+     * Handles client disconnections.
+     *
+     * @param conn   The WebSocket connection.
+     * @param code   The disconnection code.
+     * @param reason The reason for disconnection.
+     * @param remote Whether the disconnection was initiated by the remote host.
+     */
+    @Override
+    public void onClose(WebSocket conn, int code, String reason, boolean remote) {
+        logger.logInfo("Client disconnected: " + conn.getRemoteSocketAddress());
+        // Find and remove the corresponding ClientHandler
+        clientHandlers.removeIf(handler -> handler.getConnection().equals(conn));
 
-                // Create and start a new ClientHandler
-                ClientHandler handler = new ClientHandler(clientSocket, this, playerIdCounter);
-                clientHandlers.add(handler);
-                clientThreadPool.execute(handler);
-
-                // Create a new Player and add to the game
-                Player player = new Player(playerIdCounter, playerIdCounter, Config.PLAYER_START_Y, Config.HEALTH_MAX);
-                game.addPlayer(player);
-                logger.logInfo("Player " + player.getId() + " added with starting position (x=" + player.getX() + ", y=" + player.getY() + ")");
-
-                playerIdCounter++;
-            }
-        } catch (IOException e) {
-            logger.logError("Server encountered an error: " + e.getMessage());
-        } finally {
+        // Optionally, handle game termination if players drop below minimum
+        if (gameStarted && clientHandlers.size() < MIN_PLAYERS) {
+            logger.logInfo("Not enough players to continue. Shutting down the game.");
             shutdown();
         }
+    }
+
+    /**
+     * Handles incoming messages from clients.
+     *
+     * @param conn    The WebSocket connection.
+     * @param message The received message.
+     */
+    @Override
+    public void onMessage(WebSocket conn, String message) {
+        // Find the corresponding ClientHandler and pass the message
+        for (ClientHandler handler : clientHandlers) {
+            if (handler.getConnection().equals(conn)) {
+                handler.handleMessage(message);
+                break;
+            }
+        }
+    }
+
+    /**
+     * Handles errors that occur on the WebSocket connection.
+     *
+     * @param conn The WebSocket connection.
+     * @param ex   The exception that was thrown.
+     */
+    @Override
+    public void onError(WebSocket conn, Exception ex) {
+        logger.logError("WebSocket error: " + ex.getMessage());
+        if (conn != null) {
+            conn.close();
+        }
+    }
+
+    /**
+     * Handles the server starting.
+     */
+    @Override
+    public void onStart() {
+        logger.logInfo("WebSocket server started successfully.");
     }
 
     /**
@@ -128,7 +195,7 @@ public class GameServer {
                 // Clear latest inputs after processing
                 game.clearLatestInputs();
             } catch (Exception e) {
-                logger.logError("Error during game loop: " + e.getMessage());
+                logger.logError("Error in game loop: " + e.getMessage());
             }
         }, 0, TICK_RATE, TimeUnit.MILLISECONDS);
     }
@@ -139,10 +206,8 @@ public class GameServer {
      * @param gameState The serialized game state as a JSON string.
      */
     private void broadcastGameState(String gameState) {
-        synchronized (clientHandlers) {
-            for (ClientHandler handler : clientHandlers) {
-                handler.sendGameState(gameState);
-            }
+        for (ClientHandler handler : clientHandlers) {
+            handler.sendGameState(gameState);
         }
     }
 
@@ -150,6 +215,11 @@ public class GameServer {
      * Checks if the game has concluded and declares the winner if conditions are met.
      */
     private void checkGameOver() throws JsonProcessingException {
+        if (!gameStarted) {
+            // Do not check for game over if the game hasn't started
+            return;
+        }
+
         List<Player> activePlayers = new ArrayList<>();
         for (Player player : game.getPlayers()) {
             if (!player.isDisqualified()) {
@@ -162,7 +232,6 @@ public class GameServer {
                     "Player " + activePlayers.get(0).getId() + " wins the game!";
             logger.logInfo(winnerMessage);
             broadcastGameState(serializer.serializeGameOver(winnerMessage));
-            isRunning = false;
             shutdown();
         } else {
             for (Player player : activePlayers) {
@@ -170,7 +239,6 @@ public class GameServer {
                     String winnerMessage = "Player " + player.getId() + " has reached x=0 and wins the game!";
                     logger.logInfo(winnerMessage);
                     broadcastGameState(serializer.serializeGameOver(winnerMessage));
-                    isRunning = false;
                     shutdown();
                     break;
                 }
@@ -179,18 +247,16 @@ public class GameServer {
     }
 
     /**
-     * Shuts down the server and all its components gracefully.
+     * Shuts down the server gracefully.
      */
     private void shutdown() {
         try {
-            isRunning = false;
             gameLoopExecutor.shutdown();
             clientThreadPool.shutdownNow();
-            synchronized (clientHandlers) {
-                for (ClientHandler handler : clientHandlers) {
-                    handler.closeConnection();
-                }
+            for (ClientHandler handler : clientHandlers) {
+                handler.closeConnection();
             }
+            this.stop();
             logger.logInfo("GameServer has been shut down.");
         } catch (Exception e) {
             logger.logError("Error during shutdown: " + e.getMessage());
@@ -198,17 +264,17 @@ public class GameServer {
     }
 
     /**
-     * Removes a ClientHandler from the list of active handlers.
+     * Removes a client handler from the list of active handlers.
      *
      * @param handler The ClientHandler to remove.
      */
     public void removeClientHandler(ClientHandler handler) {
         clientHandlers.remove(handler);
-        logger.logInfo("ClientHandler removed. Active clients: " + clientHandlers.size());
+        logger.logInfo("Removed ClientHandler for Player " + handler.getPlayerId());
     }
 
     /**
-     * Entry point for the GameServer.
+     * Main method to start the GameServer.
      *
      * @param args Command-line arguments.
      */

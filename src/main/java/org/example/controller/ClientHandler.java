@@ -2,89 +2,52 @@ package org.example.controller;
 
 import org.example.GameServer;
 import org.example.model.Input;
-import org.example.model.PlayerAction;
 import org.example.serializer.GameStateSerializer;
 import org.example.utils.Logger;
+import org.java_websocket.WebSocket;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
-import java.io.*;
-import java.net.Socket;
-import java.util.List;
+import java.io.IOException;
 
 /**
- * This class handles the communication between the server and a single client.
+ * This class handles the communication between the server and a single client using WebSockets.
  *
  * Responsibilities include:
  * - Receiving input actions from the client
  * - Sending updated game state to the client
- * - Managing the client socket connection
+ * - Managing the WebSocket connection
  */
-
 public class ClientHandler implements Runnable {
-    private final Socket clientSocket;
+    private final WebSocket connection;
     private final GameServer server;
     private final int playerId;
     private final Logger logger;
     private final GameStateSerializer serializer;
     private volatile Input latestInput;
     private volatile boolean isConnected;
+    private final ObjectMapper objectMapper;
 
     /**
      * Constructor to initialize the ClientHandler.
      *
-     * @param clientSocket The client's socket connection.
-     * @param server       Reference to the GameServer.
-     * @param playerId     The unique identifier assigned to the player.
+     * @param connection The client's WebSocket connection.
+     * @param server     Reference to the GameServer.
+     * @param playerId   The unique identifier assigned to the player.
      */
-    public ClientHandler(Socket clientSocket, GameServer server, int playerId) {
-        this.clientSocket = clientSocket;
+    public ClientHandler(WebSocket connection, GameServer server, int playerId) {
+        this.connection = connection;
         this.server = server;
         this.playerId = playerId;
         this.logger = new Logger();
         this.serializer = new GameStateSerializer();
         this.latestInput = null;
         this.isConnected = true;
+        this.objectMapper = new ObjectMapper();
     }
 
     @Override
     public void run() {
-        try (
-            BufferedReader in = new BufferedReader(
-                    new InputStreamReader(clientSocket.getInputStream()));
-            BufferedWriter out = new BufferedWriter(
-                    new OutputStreamWriter(clientSocket.getOutputStream()))
-        ) {
-            // Send initial player information to the client
-            sendInitialInfo(out);
-
-            String message;
-            while (isConnected && (message = in.readLine()) != null) {
-                // Assuming the client sends inputs as JSON strings
-                Input input = serializer.deserializeInput(message);
-                if (input != null && input.getPlayerId() == playerId) {
-                    latestInput = input;
-                    logger.logInfo("Received input from Player " + playerId + ": " + input);
-                }
-            }
-        } catch (IOException e) {
-            logger.logError("Connection error with Player " + playerId + ": " + e.getMessage());
-        } finally {
-            closeConnection();
-            server.removeClientHandler(this);
-        }
-    }
-
-    /**
-     * Sends the initial player information to the client.
-     *
-     * @param out The BufferedWriter to send data to the client.
-     * @throws IOException If an I/O error occurs.
-     */
-    private void sendInitialInfo(BufferedWriter out) throws IOException {
-        String initialInfo = serializer.serializeInitialPlayerInfo(playerId);
-        out.write(initialInfo);
-        out.newLine();
-        out.flush();
-        logger.logInfo("Sent initial info to Player " + playerId);
+        // WebSocket connections are event-driven, so no need for a loop here
     }
 
     /**
@@ -93,17 +56,9 @@ public class ClientHandler implements Runnable {
      * @param gameState The serialized game state as a JSON string.
      */
     public void sendGameState(String gameState) {
-        try {
-            BufferedWriter out = new BufferedWriter(
-                    new OutputStreamWriter(clientSocket.getOutputStream()));
-            out.write(gameState);
-            out.newLine();
-            out.flush();
+        if (isConnected) {
+            connection.send(gameState);
             logger.logInfo("Sent game state to Player " + playerId);
-        } catch (IOException e) {
-            logger.logError("Error sending game state to Player " + playerId + ": " + e.getMessage());
-            closeConnection();
-            server.removeClientHandler(this);
         }
     }
 
@@ -117,10 +72,20 @@ public class ClientHandler implements Runnable {
     }
 
     /**
+     * Sets the latest input received from the client.
+     *
+     * @param input The Input object received.
+     */
+    public void setLatestInput(Input input) {
+        this.latestInput = input;
+        logger.logInfo("Received input from Player " + playerId + ": " + input);
+    }
+
+    /**
      * Clears the latest input after it has been processed.
      */
     public void clearLatestInput() {
-        latestInput = null;
+        this.latestInput = null;
     }
 
     /**
@@ -128,11 +93,46 @@ public class ClientHandler implements Runnable {
      */
     public void closeConnection() {
         isConnected = false;
-        try {
-            clientSocket.close();
+        if (connection != null && !connection.isClosed()) {
+            connection.close();
             logger.logInfo("Closed connection with Player " + playerId);
-        } catch (IOException e) {
-            logger.logError("Error closing connection with Player " + playerId + ": " + e.getMessage());
         }
+        server.removeClientHandler(this);
+    }
+
+    /**
+     * Handles incoming messages from the client.
+     *
+     * @param message The received message as a JSON string.
+     */
+    public void handleMessage(String message) {
+        try {
+            Input input = objectMapper.readValue(message, Input.class);
+            if (input.getPlayerId() == playerId) {
+                setLatestInput(input);
+            } else {
+                logger.logError("Player ID mismatch. Expected: " + playerId + ", Received: " + input.getPlayerId());
+            }
+        } catch (IOException e) {
+            logger.logError("Error parsing input from Player " + playerId + ": " + e.getMessage());
+        }
+    }
+
+    /**
+     * Retrieves the unique player ID associated with this handler.
+     *
+     * @return The player ID.
+     */
+    public int getPlayerId() {
+        return playerId;
+    }
+
+    /**
+     * Gets the WebSocket connection.
+     *
+     * @return The WebSocket connection.
+     */
+    public WebSocket getConnection() {
+        return connection;
     }
 }

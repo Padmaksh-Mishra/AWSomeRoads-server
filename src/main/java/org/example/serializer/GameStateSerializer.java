@@ -2,10 +2,8 @@ package org.example.serializer;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.SerializationFeature;
 import org.example.model.Game;
-import org.example.model.Player;
-import org.example.model.Hazard;
-import org.example.model.Boost;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -36,6 +34,9 @@ public class GameStateSerializer {
      * @throws JsonProcessingException If serialization fails.
      */
     public String serialize(Game game) throws JsonProcessingException {
+        // Configure ObjectMapper to format numbers as strings if needed
+        //objectMapper.configure(SerializationFeature.WRITE_NUMBERS_AS_STRINGS, false);
+        // Use custom serializer if needed to format y-coordinates
         return objectMapper.writeValueAsString(game);
     }
 

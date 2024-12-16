@@ -22,10 +22,17 @@ package org.example.config;
 
     - SIMULATION_STEP_SIZE: the time step for the simulation
     - STEP_DOWN_SIZE: the step size for moving down
+
+    - PORT: the port number for the server
+    - TICK_RATE: the tick rate for the server
  */
 
 public class Config {
-    public static final int MAX_PLAYERS = 4;
+
+    public static final int PORT = 8080;
+    public static final int TICK_RATE = 100;
+
+    public static final int MAX_PLAYERS = 2;
     public static final int Y_MAX = 100;
     public static final int X_MAX = 5;
     public static final int MAX_HAZARDS = 10;
