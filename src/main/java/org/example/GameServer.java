@@ -32,12 +32,11 @@ import org.java_websocket.handshake.ClientHandshake;
 public class GameServer extends WebSocketServer {
     private static final int PORT = Config.PORT; // Example port number
     private static final int TICK_RATE = Config.TICK_RATE; // Game update interval in milliseconds
-    private static final int MIN_PLAYERS = Config.MAX_PLAYERS; // Minimum players to start the game
 
     private Game game;
     private final Simulator simulator;
     private GameStateSerializer serializer;
-    private Logger logger = new Logger();
+    private Logger logger;
     private final ExecutorService clientThreadPool;
     private final List<ClientHandler> clientHandlers;
     private final ScheduledExecutorService gameLoopExecutor;
@@ -50,6 +49,7 @@ public class GameServer extends WebSocketServer {
     public GameServer() {
         super(new InetSocketAddress(PORT));
         this.game = new Game();
+        logger = new Logger();
         GameEngine gameEngine = new GameEngine(logger);
         this.simulator = new Simulator(gameEngine);
         this.serializer = new GameStateSerializer();
@@ -91,7 +91,7 @@ public class GameServer extends WebSocketServer {
         logger.logInfo("Player " + player.getId() + " added with starting position (x=" + player.getX() + ", y=" + player.getY() + ")");
 
         // Check if the game should start
-        if (clientHandlers.size() >= MIN_PLAYERS && !gameStarted) {
+        if (clientHandlers.size() >= Config.MAX_PLAYERS && !gameStarted) {
             gameStarted = true;
             startGameLoop();
             logger.logInfo("Game loop started.");
@@ -113,7 +113,7 @@ public class GameServer extends WebSocketServer {
         clientHandlers.removeIf(handler -> handler.getConnection().equals(conn));
 
         // Optionally, handle game termination if players drop below minimum
-        if (gameStarted && clientHandlers.size() < MIN_PLAYERS) {
+        if (gameStarted && clientHandlers.size() < Config.MIN_PLAYERS) {
             logger.logInfo("Not enough players to continue. Shutting down the game.");
             shutdown();
         }
@@ -267,6 +267,7 @@ public class GameServer extends WebSocketServer {
      *
      * @param handler The ClientHandler to remove.
      */
+    
     public void removeClientHandler(ClientHandler handler) {
         clientHandlers.remove(handler);
         logger.logInfo("Removed ClientHandler for Player " + handler.getPlayerId());

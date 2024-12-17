@@ -57,12 +57,12 @@ public class GameEngine {
      */
     public void updatePlayerActions(Game game, List<Input> inputs) {
         for (Input input : inputs) {
-            Player player = game.getPlayerById(input.getPlayerId());
+            Player player = game.getPlayerById(input.playerId());
             if (player == null || player.isDisqualified()) {
                 continue;
             }
 
-            for (PlayerAction action : input.getActions()) {
+            for (PlayerAction action : input.actions()) {
                 switch (action) {
                     case MOVE_LEFT:
                         player.setX(Math.max(player.getX() - 1, 0));
@@ -89,7 +89,7 @@ public class GameEngine {
      *
      * @param game The current game state.
      */
-    private void handleCollisions(Game game) {
+    public void handleCollisions(Game game) {
         for (Player player : game.getPlayers()) {
             if (player.isDisqualified()) {
                 continue;
@@ -120,7 +120,8 @@ public class GameEngine {
      *
      * @param game The current game state.
      */
-    private void handleDisqualifications(Game game) {
+
+    public void handleDisqualifications(Game game) {
         for (Player player : game.getPlayers()) {
             if (player.isDisqualified()) {
                 continue;
@@ -153,14 +154,14 @@ public class GameEngine {
      *
      * @param game The current game state.
      */
-    private void handleAttacks(Game game) {
+    public void handleAttacks(Game game) {
         for (Input input : game.getLatestInputs()) {
-            Player attacker = game.getPlayerById(input.getPlayerId());
+            Player attacker = game.getPlayerById(input.playerId());
             if (attacker == null || attacker.isDisqualified()) {
                 continue;
             }
 
-            for (PlayerAction action : input.getActions()) {
+            for (PlayerAction action : input.actions()) {
                 switch (action) {
                     case PUNCH_LEFT:
                         Player targetLeft = game.getPlayerAtPosition(attacker.getX() - 1, attacker.getY());

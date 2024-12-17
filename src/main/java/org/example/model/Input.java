@@ -6,23 +6,20 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 
 /**
  * This class represents the input actions sent by a player.
- *
+ * <p>
  * Attributes:
  * - playerId: the unique identifier of the player.
  * - actions: a list of actions the player has taken.
- *
+ * <p>
  * Responsibilities:
  * - Encapsulate the player actions to be sent to the server.
  */
 
-public class Input {
-    private final int playerId;
-    private final List<PlayerAction> actions;
-
+public record Input(int playerId, List<PlayerAction> actions) {
     @JsonCreator
     public Input(
-        @JsonProperty("playerId") int playerId,
-        @JsonProperty("actions") List<PlayerAction> actions
+            @JsonProperty("playerId") int playerId,
+            @JsonProperty("actions") List<PlayerAction> actions
     ) {
         this.playerId = playerId;
         this.actions = actions;
@@ -33,7 +30,8 @@ public class Input {
      *
      * @return The player ID.
      */
-    public int getPlayerId() {
+    @Override
+    public int playerId() {
         return playerId;
     }
 
@@ -42,7 +40,8 @@ public class Input {
      *
      * @return The list of player actions.
      */
-    public List<PlayerAction> getActions() {
+    @Override
+    public List<PlayerAction> actions() {
         return actions;
     }
 

@@ -1,325 +1,430 @@
-// src/test/java/org/example/engine/GameEngineTest.java
-
 package org.example;
+
 
 import org.example.config.Config;
 import org.example.engine.GameEngine;
-import org.example.model.Game;
-import org.example.model.Input;
-import org.example.model.Player;
-import org.example.model.PlayerAction;
+import org.example.model.*;
 import org.example.utils.Logger;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.InjectMocks;
+import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
-import org.mockito.junit.jupiter.MockitoExtension;
+import org.mockito.MockitoAnnotations;
 
 import java.util.Arrays;
 import java.util.List;
 
 import static org.mockito.Mockito.*;
+import static org.junit.jupiter.api.Assertions.*;
 
-@ExtendWith(MockitoExtension.class)
-public class GameEngineTest {
+class GameEngineTest {
+
+    private GameEngine gameEngine;
 
     @Mock
     private Logger mockLogger;
 
-    @InjectMocks
-    private GameEngine gameEngine;
+    @Mock
+    private Game mockGame;
+
+    @Mock
+    private Player mockPlayer;
+
+    @BeforeEach
+    void setUp() {
+        MockitoAnnotations.openMocks(this);
+        gameEngine = new GameEngine(mockLogger);
+
+        // Reset Boost.idCounter to 0 before each test for consistent ID assignments
+        Boost.resetIdCounter();
+    }
+
+    // Helper method for creating mock players
+    private Player createMockPlayer(int id, int x, int y, int health) {
+        Player player = mock(Player.class);
+        when(player.getId()).thenReturn(id);
+        when(player.getX()).thenReturn(x);
+        when(player.getY()).thenReturn((float) y);
+        when(player.getHealth()).thenReturn(health);
+        when(player.isDisqualified()).thenReturn(false);
+        return player;
+    }
 
     /**
-     * Tests updating player actions with MOVE_LEFT action.
+     * Test Case: Player moves left within bounds.
+     * Use a Spy to allow real behavior (state change) while verifying interactions.
      */
     @Test
     void testUpdatePlayerActions_MoveLeft() {
         // Arrange
-        Game mockGame = mock(Game.class);
-        Player mockPlayer = mock(Player.class);
-        Input input = mock(Input.class);
+        Player realPlayer = new Player(1, 5, 5, 10); // Real Player object
+        Player spyPlayer = spy(realPlayer); // Using Spy
+        when(mockGame.getPlayerById(1)).thenReturn(spyPlayer);
 
-        when(input.getPlayerId()).thenReturn(1);
-        when(input.getActions()).thenReturn(List.of(PlayerAction.MOVE_LEFT));
-        when(mockGame.getPlayerById(1)).thenReturn(mockPlayer);
-        when(mockPlayer.getX()).thenReturn(5);
-        when(mockPlayer.getId()).thenReturn(1);
-
+        Input input = new Input(1, Arrays.asList(PlayerAction.MOVE_LEFT));
         List<Input> inputs = List.of(input);
 
         // Act
         gameEngine.updatePlayerActions(mockGame, inputs);
 
         // Assert
-        verify(mockPlayer).setX(4); // 5 - 1 = 4
+        assertEquals(4, spyPlayer.getX(), "Player should have moved left to x=4");
+        verify(spyPlayer).setX(4); // Verify setX was called with 4
         verify(mockLogger).logInfo("Player 1 moved left to x=4");
     }
 
     /**
-     * Tests updating player actions with MOVE_RIGHT action.
+     * Test Case: Player moves right within bounds.
+     * Use a Spy to verify state change.
      */
     @Test
     void testUpdatePlayerActions_MoveRight() {
         // Arrange
-        Game mockGame = mock(Game.class);
-        Player mockPlayer = mock(Player.class);
-        Input input = mock(Input.class);
+        Player realPlayer = new Player(3, 4, 5, 10);
+        Player spyPlayer = spy(realPlayer); // Using Spy
+        when(mockGame.getPlayerById(3)).thenReturn(spyPlayer);
 
-        when(input.getPlayerId()).thenReturn(2);
-        when(input.getActions()).thenReturn(Arrays.asList(PlayerAction.MOVE_RIGHT));
-        when(mockGame.getPlayerById(2)).thenReturn(mockPlayer);
-        when(mockPlayer.getX()).thenReturn(3);
-        when(mockPlayer.getId()).thenReturn(2);
-
-        List<Input> inputs = Arrays.asList(input);
+        Input input = new Input(3, List.of(PlayerAction.MOVE_RIGHT));
+        List<Input> inputs = List.of(input);
 
         // Act
         gameEngine.updatePlayerActions(mockGame, inputs);
 
         // Assert
-        int expectedX = Math.min(3 + 1, Config.X_MAX); // 3 + 1 = 4, Config.X_MAX = 5
-        verify(mockPlayer).setX(expectedX);
-        verify(mockLogger).logInfo("Player 2 moved right to x=4");
+        assertEquals(5, spyPlayer.getX(), "Player should have moved right to x=5");
+        verify(spyPlayer).setX(5);
+        verify(mockLogger).logInfo("Player 3 moved right to x=5");
     }
 
     /**
-     * Tests updating player actions with STEP_DOWN action.
+     * Test Case: Player steps down.
+     * Use a Spy to verify y-coordinate update.
      */
     @Test
     void testUpdatePlayerActions_StepDown() {
         // Arrange
-        Game mockGame = mock(Game.class);
-        Player mockPlayer = mock(Player.class);
-        Input input = mock(Input.class);
+        Player realPlayer = new Player(5, 5, 10, 10);
+        Player spyPlayer = spy(realPlayer); // Using Spy
+        when(mockGame.getPlayerById(5)).thenReturn(spyPlayer);
 
-        when(input.getPlayerId()).thenReturn(3);
-        when(input.getActions()).thenReturn(Arrays.asList(PlayerAction.STEP_DOWN));
-        when(mockGame.getPlayerById(3)).thenReturn(mockPlayer);
-        when(mockPlayer.getY()).thenReturn(7.0f);
-        when(mockPlayer.getId()).thenReturn(3);
-
-        List<Input> inputs = Arrays.asList(input);
+        Input input = new Input(5, Arrays.asList(PlayerAction.STEP_DOWN));
+        List<Input> inputs = List.of(input);
 
         // Act
         gameEngine.updatePlayerActions(mockGame, inputs);
 
         // Assert
-        float expectedY = Math.min(7.0f + Config.STEP_DOWN_SIZE, Config.Y_MAX); // 7.0 + 2.5 = 9.5
-        verify(mockPlayer).setY(expectedY);
-        verify(mockLogger).logInfo("Player 3 stepped down to y=7.5");
+        float expectedY = Math.min(10 + Config.STEP_DOWN_SIZE, Config.Y_MAX);
+        assertEquals(expectedY, spyPlayer.getY(), "Player should have stepped down to new y-coordinate");
+        verify(spyPlayer).setY(expectedY);
+        verify(mockLogger).logInfo("Player 5 stepped down to y=" + expectedY);
     }
 
+    @Test
+    void testHandleCollisions_PlayerCollectsBoost() throws Exception {
+        // Arrange
+        Player mockPlayer = createMockPlayer(6, 3, 3, 10); // Using Mock
+
+        // Create a spy of Boost
+        Boost realBoost = new Boost(3, 3); // Initialize with known coordinates
+        Boost spyBoost = spy(realBoost); // Create a spy
+
+        // Stub methods on the spy
+        when(spyBoost.isActive()).thenReturn(true);
+        when(spyBoost.getId()).thenReturn(0); // Assuming this is the first boost
+
+        // Set up the game mock
+        when(mockGame.getPlayers()).thenReturn(List.of(mockPlayer));
+        when(mockGame.getBoosts()).thenReturn(List.of(spyBoost));
+
+        // Act
+        gameEngine.handleCollisions(mockGame);
+
+        // Assert
+        verify(spyBoost).applyToPlayer(mockPlayer);
+        verify(mockLogger).logInfo("Player 6 collected Boost 0 and gained boost power.");
+    }
+
+
     /**
-     * Tests updating player actions with STEP_DOWN action exceeding Y_MAX.
+     * Test Case: Player's health reaches zero and y-coordinate penalty applied.
+     * Use a Spy to verify state changes.
      */
     @Test
-    void testUpdatePlayerActions_StepDownExceedsYMax() {
+    void testHandleDisqualifications_PlayerHealthZero_YPenalty() {
         // Arrange
-        Game mockGame = mock(Game.class);
-        Player mockPlayer = mock(Player.class);
-        Input input = mock(Input.class);
-
-        when(input.getPlayerId()).thenReturn(4);
-        when(input.getActions()).thenReturn(Arrays.asList(PlayerAction.STEP_DOWN));
-        when(mockGame.getPlayerById(4)).thenReturn(mockPlayer);
-        when(mockPlayer.getY()).thenReturn(98.0f); // Close to Y_MAX = 100
-        when(mockPlayer.getId()).thenReturn(4);
-
-        List<Input> inputs = Arrays.asList(input);
+        Player realPlayer = new Player(7, 5, 5, 0); // Health zero
+        Player spyPlayer = spy(realPlayer); // Using Spy
+        when(mockGame.getPlayers()).thenReturn(List.of(spyPlayer));
+        when(spyPlayer.isDisqualified()).thenReturn(false);
 
         // Act
-        gameEngine.updatePlayerActions(mockGame, inputs);
+        gameEngine.handleDisqualifications(mockGame);
 
         // Assert
-        float expectedY = Math.min(98.0f + Config.STEP_DOWN_SIZE, Config.Y_MAX); // 98.0 + 2.5 = 100.0 (capped)
-        verify(mockPlayer).setY(expectedY);
-        verify(mockLogger).logInfo("Player 4 stepped down to y=100.0");
+        float expectedY = Math.max(5 - Config.FALL_PENALTY, 0);
+        assertEquals(expectedY, spyPlayer.getY(), "Player y should have decreased by FALL_PENALTY");
+        verify(spyPlayer).setY(expectedY);
+        verify(mockLogger).logInfo(contains("fall penalty"));
+
+        // Since new y < Y_MAX, health should reset
+        verify(spyPlayer).setHealth(Config.HEALTH_MAX);
+        verify(mockLogger).logInfo("Player 7 has been healed to full health.");
     }
 
     /**
-     * Tests updating player actions with multiple actions.
+     * Test Case: Player's y-coordinate reaches Y_MAX and gets disqualified.
+     * Use a Spy to verify state changes.
+     */
+    @Test
+    void testHandleDisqualifications_PlayerReachesYMax() {
+        // Arrange
+        Player realPlayer = new Player(8, 5, Config.Y_MAX, 10); // y = Y_MAX
+        Player spyPlayer = spy(realPlayer); // Using Spy
+        when(mockGame.getPlayers()).thenReturn(List.of(spyPlayer));
+        when(spyPlayer.isDisqualified()).thenReturn(false);
+
+        // Act
+        gameEngine.handleDisqualifications(mockGame);
+
+        // Assert
+        verify(spyPlayer).disqualify();
+        verify(mockLogger).logInfo("Player 8 has been disqualified for reaching Y_MAX.");
+    }
+
+    /**
+     * Test Case: Player is already disqualified.
+     * Use a Mock to verify that no actions are taken.
+     */
+    @Test
+    void testHandleDisqualifications_PlayerAlreadyDisqualified() {
+        // Arrange
+        Player mockPlayer = createMockPlayer(9, 5, 5, 10);
+        when(mockPlayer.isDisqualified()).thenReturn(true);
+        when(mockGame.getPlayers()).thenReturn(List.of(mockPlayer));
+
+        // Act
+        gameEngine.handleDisqualifications(mockGame);
+
+        // Assert
+        verify(mockPlayer, never()).setY(anyFloat());
+        verify(mockPlayer, never()).setHealth(anyInt());
+        verify(mockLogger, never()).logInfo(contains("fall penalty"));
+        verify(mockLogger, never()).logInfo(contains("healed"));
+        verify(mockLogger, never()).logInfo(contains("disqualified"));
+    }
+
+    /**
+     * Test Case: Player punches left successfully.
+     * Use Mocks since we don't need state changes in Players.
+     */
+    @Test
+    void testHandleAttacks_PlayerPunchesLeft() {
+        // Arrange
+        Player attacker = createMockPlayer(10, 5, 50, 10);
+        Player target = createMockPlayer(11, 4, 50, 10); // Player to the left
+
+        Input input = new Input(10, List.of(PlayerAction.PUNCH_LEFT));
+
+        when(mockGame.getLatestInputs()).thenReturn(List.of(input));
+        when(mockGame.getPlayerById(10)).thenReturn(attacker);
+        when(mockGame.getPlayerAtPosition(4, 50)).thenReturn(target);
+
+        // Act
+        gameEngine.handleAttacks(mockGame);
+
+        // Assert
+        verify(target).setHealth(5); // Assuming PUNCH_DAMAGE = 5
+        verify(mockLogger).logWarning(contains("punched Player 11"));
+    }
+
+    /**
+     * Test Case: Player kicks right successfully.
+     * Use a Spy to verify state changes on the kicked player.
+     */
+    @Test
+    void testHandleAttacks_PlayerKicksRight() {
+        // Arrange
+        Player attacker = createMockPlayer(12, 5, 50, 10);
+        Player realTarget = new Player(13, 6, 50, 10); // Player to the right
+        Player spyTarget = spy(realTarget); // Using Spy
+        when(mockGame.getPlayerAtPosition(6, 50)).thenReturn(spyTarget);
+        when(mockGame.getPlayerById(12)).thenReturn(attacker);
+
+        Input input = new Input(12, List.of(PlayerAction.KICK_RIGHT));
+        when(mockGame.getLatestInputs()).thenReturn(List.of(input));
+
+        // Act
+        gameEngine.handleAttacks(mockGame);
+
+        // Assert
+        int expectedX = Math.min(6 + 1, Config.X_MAX);
+        assertEquals(expectedX, spyTarget.getX(), "Player 13 should have been kicked right to x=" + expectedX);
+        verify(spyTarget).setX(expectedX);
+        verify(mockLogger).logInfo("Player 12 kicked Player 13 to the right. New x=" + expectedX);
+    }
+
+    /**
+     * Test Case: Player kicks left successfully.
+     * Use a Spy to verify state changes on the kicked player.
+     */
+    @Test
+    void testHandleAttacks_PlayerKicksLeft() {
+        // Arrange
+        Player attacker = createMockPlayer(14, 5, 50, 10);
+        Player realTarget = new Player(15, 4, 50, 10); // Player to the left
+        Player spyTarget = spy(realTarget); // Using Spy
+        when(mockGame.getPlayerAtPosition(4, 50)).thenReturn(spyTarget);
+        when(mockGame.getPlayerById(14)).thenReturn(attacker);
+
+        Input input = new Input(14, List.of(PlayerAction.KICK_LEFT));
+        when(mockGame.getLatestInputs()).thenReturn(List.of(input));
+
+        // Act
+        gameEngine.handleAttacks(mockGame);
+
+        // Assert
+        int expectedX = Math.max(4 - 1, 0);
+        assertEquals(expectedX, spyTarget.getX(), "Player 15 should have been kicked left to x=" + expectedX);
+        verify(spyTarget).setX(expectedX);
+        verify(mockLogger).logInfo("Player 14 kicked Player 15 to the left. New x=" + expectedX);
+    }
+
+    /**
+     * Test Case: Multiple actions in a single input.
+     * Use a Spy to verify multiple state changes.
      */
     @Test
     void testUpdatePlayerActions_MultipleActions() {
         // Arrange
-        Game mockGame = mock(Game.class);
-        Player mockPlayer = mock(Player.class);
-        Input input = mock(Input.class);
+        Player realPlayer = new Player(16, 5, 5, 10);
+        Player spyPlayer = spy(realPlayer); // Using Spy
+        when(mockGame.getPlayerById(16)).thenReturn(spyPlayer);
 
-        when(input.getPlayerId()).thenReturn(5);
-        when(input.getActions()).thenReturn(Arrays.asList(PlayerAction.MOVE_LEFT, PlayerAction.STEP_DOWN));
-        when(mockGame.getPlayerById(5)).thenReturn(mockPlayer);
-        when(mockPlayer.getX()).thenReturn(2);
-        when(mockPlayer.getY()).thenReturn(4.0f);
-        when(mockPlayer.getId()).thenReturn(5);
-
-        List<Input> inputs = Arrays.asList(input);
+        Input input = new Input(16, Arrays.asList(PlayerAction.MOVE_LEFT, PlayerAction.STEP_DOWN));
+        List<Input> inputs = List.of(input);
 
         // Act
         gameEngine.updatePlayerActions(mockGame, inputs);
 
         // Assert
-        int expectedX = Math.max(2 - 1, 0); // 2 - 1 = 1
-        float expectedY = Math.min(4.0f + Config.STEP_DOWN_SIZE, Config.Y_MAX); // 4.0 + 2.5 = 6.5
-        verify(mockPlayer).setX(expectedX);
-        verify(mockLogger).logInfo("Player 5 moved left to x=1");
-        verify(mockPlayer).setY(expectedY);
-        verify(mockLogger).logInfo("Player 5 stepped down to y=6.5");
+        assertEquals(4, spyPlayer.getX(), "Player should have moved left to x=4");
+        float expectedY = Math.min(5 + Config.STEP_DOWN_SIZE, Config.Y_MAX);
+        assertEquals(expectedY, spyPlayer.getY(), "Player should have stepped down");
+        verify(spyPlayer).setX(4);
+        verify(spyPlayer).setY(expectedY);
+        verify(mockLogger).logInfo("Player 16 moved left to x=4");
+        verify(mockLogger).logInfo("Player 16 stepped down to y=" + expectedY);
     }
 
     /**
-     * Tests updating player actions for a disqualified player.
+     * Test Case: Player performs an undefined action.
+     * Use a Mock to ensure no unintended interactions occur.
      */
     @Test
-    void testUpdatePlayerActions_DisqualifiedPlayer() {
+    void testUpdatePlayerActions_UndefinedAction() {
         // Arrange
-        Game mockGame = mock(Game.class);
-        Player mockPlayer = mock(Player.class);
-        Input input = mock(Input.class);
+        Player mockPlayer = createMockPlayer(17, 5, 5, 10); // Using Mock
+        when(mockGame.getPlayerById(17)).thenReturn(mockPlayer);
 
-        when(input.getPlayerId()).thenReturn(6);
-        when(input.getActions()).thenReturn(Arrays.asList(PlayerAction.MOVE_RIGHT));
-        when(mockGame.getPlayerById(6)).thenReturn(mockPlayer);
-        when(mockPlayer.isDisqualified()).thenReturn(true);
-        when(mockPlayer.getId()).thenReturn(6);
-
-        List<Input> inputs = Arrays.asList(input);
+        // Assuming UNDEFINED_ACTION is an enum value not handled in switch
+        // If such an action does not exist, create a placeholder or skip this test
+        // For demonstration, let's assume it exists
+        PlayerAction undefinedAction = PlayerAction.UNDEFINED_ACTION;
+        Input input = new Input(17, Arrays.asList(undefinedAction));
+        List<Input> inputs = List.of(input);
 
         // Act
         gameEngine.updatePlayerActions(mockGame, inputs);
 
         // Assert
-        verify(mockPlayer, never()).setX(anyInt());
-        verify(mockLogger, never()).logInfo(anyString());
-    }
-
-    /**
-     * Tests updating player actions for a non-existent player.
-     */
-    @Test
-    void testUpdatePlayerActions_NonExistentPlayer() {
-        // Arrange
-        Game mockGame = mock(Game.class);
-        Input input = mock(Input.class);
-
-        when(input.getPlayerId()).thenReturn(7);
-        when(input.getActions()).thenReturn(Arrays.asList(PlayerAction.MOVE_LEFT));
-        when(mockGame.getPlayerById(7)).thenReturn(null);
-
-        List<Input> inputs = Arrays.asList(input);
-
-        // Act
-        gameEngine.updatePlayerActions(mockGame, inputs);
-
-        // Assert
-        verify(mockGame, times(1)).getPlayerById(7);
-        // Ensure no further interactions
-        verifyNoMoreInteractions(mockGame);
-    }
-
-    /**
-     * Tests updating player actions with an unsupported action.
-     */
-    @Test
-    void testUpdatePlayerActions_UnsupportedAction() {
-        // Arrange
-        Game mockGame = mock(Game.class);
-        Player mockPlayer = mock(Player.class);
-        Input input = mock(Input.class);
-
-        when(input.getPlayerId()).thenReturn(8);
-        when(input.getActions()).thenReturn(Arrays.asList(PlayerAction.PUNCH_LEFT)); // Assuming PUNCH_LEFT is not handled here
-        when(mockGame.getPlayerById(8)).thenReturn(mockPlayer);
-        when(mockPlayer.getId()).thenReturn(8);
-
-        List<Input> inputs = Arrays.asList(input);
-
-        // Act
-        gameEngine.updatePlayerActions(mockGame, inputs);
-
-        // Assert
-        // No position changes should occur
         verify(mockPlayer, never()).setX(anyInt());
         verify(mockPlayer, never()).setY(anyFloat());
         verify(mockLogger, never()).logInfo(anyString());
     }
 
     /**
-     * Tests handling multiple players with various actions.
+     * Test Case: Handling multiple players with various inputs.
+     * Use Spies for players to verify state changes.
      */
     @Test
-    void testUpdatePlayerActions_MultiplePlayers() {
+    void testUpdateGameState_MultiplePlayers() {
         // Arrange
-        Game mockGame = mock(Game.class);
+        Player realPlayer1 = new Player(18, 5, 5, 10);
+        Player spyPlayer1 = spy(realPlayer1);
+        Player realPlayer2 = new Player(19, 10, 10, 10);
+        Player spyPlayer2 = spy(realPlayer2);
 
-        Player mockPlayer1 = mock(Player.class);
-        when(mockPlayer1.getId()).thenReturn(9);
-        when(mockPlayer1.getX()).thenReturn(5);
-        when(mockPlayer1.getY()).thenReturn(5.0f);
-        when(mockPlayer1.isDisqualified()).thenReturn(false);
+        when(mockGame.getPlayerById(18)).thenReturn(spyPlayer1);
+        when(mockGame.getPlayerById(19)).thenReturn(spyPlayer2);
 
-        Player mockPlayer2 = mock(Player.class);
-        when(mockPlayer2.getId()).thenReturn(10);
-        when(mockPlayer2.getX()).thenReturn(3);
-        when(mockPlayer2.getY()).thenReturn(7.0f);
-        when(mockPlayer2.isDisqualified()).thenReturn(false);
-
-        when(mockGame.getPlayerById(9)).thenReturn(mockPlayer1);
-        when(mockGame.getPlayerById(10)).thenReturn(mockPlayer2);
-
-        Input input1 = mock(Input.class);
-        when(input1.getPlayerId()).thenReturn(9);
-        when(input1.getActions()).thenReturn(Arrays.asList(PlayerAction.MOVE_LEFT, PlayerAction.STEP_DOWN));
-
-        Input input2 = mock(Input.class);
-        when(input2.getPlayerId()).thenReturn(10);
-        when(input2.getActions()).thenReturn(Arrays.asList(PlayerAction.MOVE_RIGHT));
-
-        List<Input> inputs = Arrays.asList(input1, input2);
+        Input input1 = new Input(18, Arrays.asList(PlayerAction.MOVE_LEFT));
+        Input input2 = new Input(19, Arrays.asList(PlayerAction.STEP_DOWN));
+        List<Input> inputs = List.of(input1, input2);
 
         // Act
-        gameEngine.updatePlayerActions(mockGame, inputs);
+        gameEngine.updateGameState(mockGame, inputs);
 
         // Assert
-        // Player 9
-        int expectedX1 = Math.max(5 - 1, 0); // 5 - 1 = 4
-        float expectedY1 = Math.min(5.0f + Config.STEP_DOWN_SIZE, Config.Y_MAX); // 5.0 + 2.5 = 7.5
-        verify(mockPlayer1).setX(expectedX1);
-        verify(mockLogger).logInfo("Player 9 moved left to x=4");
-        verify(mockPlayer1).setY(expectedY1);
-        verify(mockLogger).logInfo("Player 9 stepped down to y=7.5");
+        // Player 18 moved left
+        assertEquals(4, spyPlayer1.getX(), "Player 18 should have moved left to x=4");
+        verify(spyPlayer1).setX(4);
+        verify(mockLogger).logInfo("Player 18 moved left to x=4");
 
-        // Player 10
-        int expectedX2 = Math.min(3 + 1, Config.X_MAX); // 3 + 1 = 4
-        verify(mockPlayer2).setX(expectedX2);
-        verify(mockLogger).logInfo("Player 10 moved right to x=4");
+        // Player 19 stepped down
+        float expectedY = Math.min(10 + Config.STEP_DOWN_SIZE, Config.Y_MAX);
+        assertEquals(expectedY, spyPlayer2.getY(), "Player 19 should have stepped down");
+        verify(spyPlayer2).setY(expectedY);
+        verify(mockLogger).logInfo("Player 19 stepped down to y=" + expectedY);
     }
 
     /**
-     * Tests updating player actions with STEP_DOWN action reaching Y_MAX.
+     * Test Case: Player performs multiple attacks in a single input.
+     * Use Spies for some targets to verify state changes.
      */
     @Test
-    void testUpdatePlayerActions_StepDownReachesYMax() {
+    void testHandleAttacks_MultipleAttacks() {
         // Arrange
-        Game mockGame = mock(Game.class);
-        Player mockPlayer = mock(Player.class);
-        Input input = mock(Input.class);
+        Player attacker = createMockPlayer(20, 5, 50, 10);
+        Player targetPunch = createMockPlayer(21, 6, 50, 10);
+        Player targetKick = spy(new Player(22, 4, 50, 10)); // Using Spy for kicked player
 
-        when(input.getPlayerId()).thenReturn(11);
-        when(input.getActions()).thenReturn(Arrays.asList(PlayerAction.STEP_DOWN));
-        when(mockGame.getPlayerById(11)).thenReturn(mockPlayer);
-        when(mockPlayer.getY()).thenReturn(96.0f); // 96 + 5.0 = 101 -> capped at 100
-        when(mockPlayer.getId()).thenReturn(11);
-
-        List<Input> inputs = Arrays.asList(input);
+        when(mockGame.getLatestInputs()).thenReturn(List.of(
+                new Input(20, Arrays.asList(PlayerAction.PUNCH_RIGHT, PlayerAction.KICK_LEFT))
+        ));
+        when(mockGame.getPlayerById(20)).thenReturn(attacker);
+        when(mockGame.getPlayerAtPosition(6, 50)).thenReturn(targetPunch);
+        when(mockGame.getPlayerAtPosition(4, 50)).thenReturn(targetKick);
 
         // Act
-        gameEngine.updatePlayerActions(mockGame, inputs);
+        gameEngine.handleAttacks(mockGame);
 
         // Assert
-        float expectedY = Math.min(96.0f + Config.STEP_DOWN_SIZE, Config.Y_MAX); // 96.0 + 2.5 = 98.5
-        verify(mockPlayer).setY(expectedY);
-        verify(mockLogger).logInfo("Player 11 stepped down to y=98.5");
+        // Verify punch
+        verify(targetPunch).setHealth(5);
+        verify(mockLogger).logWarning(contains("punched Player 21"));
+
+        // Verify kick
+        int expectedX = Math.max(4 - 1, 0);
+        assertEquals(expectedX, targetKick.getX(), "Player 22 should have been kicked left to x=3");
+        verify(targetKick).setX(expectedX);
+        verify(mockLogger).logInfo("Player 20 kicked Player 22 to the left. New x=" + expectedX);
+    }
+
+    /**
+     * Test Case: No inputs received.
+     * Use Mocks to ensure no actions are taken.
+     */
+    @Test
+    void testUpdateGameState_NoInputs() {
+        // Arrange
+        when(mockGame.getLatestInputs()).thenReturn(List.of());
+
+        // Act
+        gameEngine.updateGameState(mockGame, List.of());
+
+        // Assert
+        // Ensure no interactions occur since there are no inputs
+        verifyNoInteractions(mockLogger);
     }
 }

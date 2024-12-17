@@ -1,23 +1,25 @@
 package org.example.model;
 
 import org.example.config.Config;
+
 import java.util.Random;
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * This class represents a boost in the game.
  *
  * Attributes:
- * - id: a unique identifier for the boost (generated randomly)
+ * - id: a unique identifier for the boost (incremented)
  * - x: the x-coordinate of the boost
  * - y: the y-coordinate of the boost
  *
  * Responsibilities:
- * - Randomly generating boosts on the game board
+ * - Generating boosts on the game board with unique IDs
  * - Destroying the boosts when they reach the bottom of the game board or collide with a player
  * - Applying the boost to a player when they collide with it
  */
-
 public class Boost {
+    private static final AtomicInteger ID_COUNTER = new AtomicInteger(0); // Atomic counter for unique IDs
     private final int id;
     private int x;
     private float y; // Changed y from int to float
@@ -28,12 +30,11 @@ public class Boost {
     /**
      * Constructor to initialize a Boost object.
      *
-     * @param id Unique identifier for the boost.
-     * @param x  X-coordinate of the boost.
-     * @param y  Y-coordinate of the boost.
+     * @param x X-coordinate of the boost.
+     * @param y Y-coordinate of the boost.
      */
-    public Boost(int id, int x, int y) {
-        this.id = id;
+    public Boost(int x, int y) {
+        this.id = ID_COUNTER.getAndIncrement(); // Assign unique incremental ID
         this.x = x;
         this.y = y;
         this.isActive = true;
@@ -72,16 +73,16 @@ public class Boost {
     /**
      * Generates a new Boost with random coordinates.
      *
+     * @param currentBoostCount The current number of active boosts.
      * @return A new Boost instance or null if the maximum number of boosts exists.
      */
     public static Boost generateBoost(int currentBoostCount) {
         if (currentBoostCount >= Config.MAX_BOOSTS) {
             return null;
         }
-        int id = RANDOM.nextInt(Integer.MAX_VALUE);
         int x = RANDOM.nextInt(Config.X_MAX + 1);
         int y = RANDOM.nextInt(Config.Y_MAX + 1);
-        return new Boost(id, x, y);
+        return new Boost(x, y);
     }
 
     /**
@@ -126,5 +127,11 @@ public class Boost {
                 '}';
     }
 
-    // Equals and hashCode methods can be added if needed
+    /**
+     * Resets the Boost ID counter.
+     * Intended for testing purposes only.
+     */
+    public static void resetIdCounter() {
+        ID_COUNTER.set(0);
+    }
 }

@@ -20,5 +20,5 @@ public enum PlayerAction {
     PUNCH_LEFT,
     PUNCH_RIGHT,
     KICK_LEFT,
-    KICK_RIGHT;
+    KICK_RIGHT, UNDEFINED_ACTION;
 }

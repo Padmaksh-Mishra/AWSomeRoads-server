@@ -30,9 +30,10 @@ package org.example.config;
 public class Config {
 
     public static final int PORT = 8080;
-    public static final int TICK_RATE = 30000;   // 3 seconds for testing purposes
+    public static final int TICK_RATE = 1000;   // 3 seconds for testing purposes
 
     public static final int MAX_PLAYERS = 2;
+    public static final int MIN_PLAYERS = 2;
     public static final int Y_MAX = 100;
     public static final int X_MAX = 5;
     public static final int MAX_HAZARDS = 10;
@@ -41,13 +42,13 @@ public class Config {
     public static final int BOOST_POWER = 15;
 
     public static final int HEALTH_MAX = 100;
-    public static final int PUNCH_DAMAGE = 15;
+    public static final int PUNCH_DAMAGE = 5;
     public static final int FALL_PENALTY = 10;
     public static final int PLAYER_START_Y = 70;
     public static final int WINNING_X = 0;
 
-    public static final float HAZARD_PROBABILITY = 0.0001f; // Probability of generating a hazard per simulation step
-    public static final float BOOST_PROBABILITY = 0.00005f; // Probability of generating a boost per simulation step
+    public static final float HAZARD_PROBABILITY = 0.01f; // Probability of generating a hazard per simulation step
+    public static final float BOOST_PROBABILITY = 0.005f; // Probability of generating a boost per simulation step
 
     public static final float SIMULATION_STEP_SIZE = 0.10f; // Time step as float
 

@@ -2,7 +2,6 @@ package org.example.controller;
 
 import org.example.GameServer;
 import org.example.model.Input;
-import org.example.serializer.GameStateSerializer;
 import org.example.utils.Logger;
 import org.java_websocket.WebSocket;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -108,10 +107,10 @@ public class ClientHandler implements Runnable {
     public void handleMessage(String message) {
         try {
             Input input = objectMapper.readValue(message, Input.class);
-            if (input.getPlayerId() == playerId) {
+            if (input.playerId() == playerId) {
                 setLatestInput(input);
             } else {
-                logger.logError("Player ID mismatch. Expected: " + playerId + ", Received: " + input.getPlayerId());
+                logger.logError("Player ID mismatch. Expected: " + playerId + ", Received: " + input.playerId());
             }
         } catch (IOException e) {
             logger.logError("Error parsing input from Player " + playerId + ": " + e.getMessage());
