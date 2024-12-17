@@ -34,11 +34,11 @@ public class Config {
 
     public static final int MAX_PLAYERS = 2;
     public static final int MIN_PLAYERS = 2;
-    public static final int Y_MAX = 100;
-    public static final int X_MAX = 5;
-    public static final int MAX_HAZARDS = 10;
-    public static final int MAX_BOOSTS = 5;
-    public static final int HAZARD_DAMAGE = 20;
+    public static int Y_MAX = 100;
+    public static int X_MAX = 5;
+    public static int MAX_HAZARDS = 10;
+    public static int MAX_BOOSTS = 5;
+    public static int HAZARD_DAMAGE = 20;
     public static final int BOOST_POWER = 15;
 
     public static final int HEALTH_MAX = 100;
@@ -47,10 +47,14 @@ public class Config {
     public static final int PLAYER_START_Y = 70;
     public static final int WINNING_X = 0;
 
-    public static final float HAZARD_PROBABILITY = 0.01f; // Probability of generating a hazard per simulation step
-    public static final float BOOST_PROBABILITY = 0.005f; // Probability of generating a boost per simulation step
+    // New configurations for generation rates (per second)
+    public static float HAZARD_RATE_PER_SECOND = 5.0f; // 5 hazards per second
+    public static float BOOST_RATE_PER_SECOND = 3.0f;  // 3 boosts per second
 
-    public static final float SIMULATION_STEP_SIZE = 0.10f; // Time step as float
+//    public static final float HAZARD_PROBABILITY = 0.01f; // Probability of generating a hazard per simulation step
+//    public static final float BOOST_PROBABILITY = 0.005f; // Probability of generating a boost per simulation step
+
+    public static float SIMULATION_STEP_SIZE = 0.10f; // Time step as float
 
     public static final float STEP_DOWN_SIZE = 0.5f; // Step size for moving down
 }

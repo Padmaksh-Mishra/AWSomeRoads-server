@@ -1,7 +1,10 @@
 package org.example;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import org.example.config.Config;
+import org.example.model.Boost;
 import org.example.model.Game;
+import org.example.model.Hazard;
 import org.example.model.Player;
 import org.example.serializer.GameStateSerializer;
 import org.example.utils.Logger;
@@ -11,17 +14,14 @@ import org.java_websocket.handshake.ClientHandshake;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.InjectMocks;
-import org.mockito.Mock;
-import org.mockito.MockitoAnnotations;
+import org.mockito.*;
 import org.mockito.junit.jupiter.MockitoExtension;
-import com.fasterxml.jackson.core.JsonProcessingException;
 
 import java.util.ArrayList;
 import java.util.List;
 
-import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.mockito.Mockito.*;
+import static org.junit.jupiter.api.Assertions.*;
 
 /**
  * Tests for the [GameServer](src/main/java/org/example/GameServer.java) class.
@@ -47,15 +47,62 @@ public class GameServerTest {
     @Mock
     private ClientHandshake mockHandshake;
 
+    @Spy
     @InjectMocks
-    private GameServer gameServer;
+    private GameServer gameServer; // Convert to Spy to verify internal method calls
+
+    private List<Hazard> realHazards;
+    private List<Boost> realBoosts;
+    private List<Player> realPlayers;
 
     @BeforeEach
     void setUp() {
-        // Initialize mocks
-        MockitoAnnotations.openMocks(this);
-        
-        // Inject mocks into GameServer
+        // Initialize real lists for hazards, boosts, and players
+        realHazards = new ArrayList<>();
+        realBoosts = new ArrayList<>();
+        realPlayers = new ArrayList<>();
+
+        // Configure getHazards(), getBoosts(), and getPlayers() to return the real lists
+        when(mockGame.getHazards()).thenReturn(realHazards);
+        when(mockGame.getBoosts()).thenReturn(realBoosts);
+        when(mockGame.getPlayers()).thenReturn(realPlayers);
+
+        // Configure addHazard() to add to the realHazards list
+        doAnswer(invocation -> {
+            Hazard hazard = invocation.getArgument(0);
+            realHazards.add(hazard);
+            return null;
+        }).when(mockGame).addHazard(any(Hazard.class));
+
+        // Configure addBoost() to add to the realBoosts list
+        doAnswer(invocation -> {
+            Boost boost = invocation.getArgument(0);
+            realBoosts.add(boost);
+            return null;
+        }).when(mockGame).addBoost(any(Boost.class));
+
+        // Configure addPlayer() if GameServer uses it
+        doAnswer(invocation -> {
+            Player player = invocation.getArgument(0);
+            realPlayers.add(player);
+            return null;
+        }).when(mockGame).addPlayer(any(Player.class));
+
+        // Reset Config to default values to ensure test isolation
+        Config.HAZARD_RATE_PER_SECOND = 5.0f; // Default value
+        Config.BOOST_RATE_PER_SECOND = 3.0f;  // Default value
+        Config.SIMULATION_STEP_SIZE = 0.1f;   // Default step size (e.g., 100ms)
+        Config.MAX_HAZARDS = 50;
+        Config.MAX_BOOSTS = 50;
+        Config.Y_MAX = 100; // Assuming Y_MAX is a float
+        Config.X_MAX = 100;
+        Config.HAZARD_DAMAGE = 10;
+
+        // Reset ID counters for Hazard and Boost to ensure consistent IDs across tests
+        Hazard.resetIdCounter();
+        Boost.resetIdCounter();
+
+        // Set Game and Logger in GameServer
         gameServer.setGame(mockGame);
         gameServer.setLogger(mockLogger);
         gameServer.setSerializer(mockSerializer);
@@ -169,9 +216,14 @@ public class GameServerTest {
         gameServer.shutdown();
 
         // Assert
+        // Verify that closeConnection() was called on each handler
         verify(handler1).closeConnection();
         verify(handler2).closeConnection();
+
+        // Verify that stop() was called on GameServer (Spy)
         verify(gameServer).stop();
+
+        // Verify that the shutdown log was recorded
         verify(mockLogger).logInfo("GameServer has been shut down.");
     }
 
@@ -362,14 +414,13 @@ public class GameServerTest {
         when(mockSerializer.serializeGameOver("Player 1 wins the game!"))
                 .thenThrow(new JsonProcessingException("Serialization failed") {});
 
-        // Act
-        try {
+        // Act & Assert
+        Exception exception = assertThrows(JsonProcessingException.class, () -> {
             gameServer.checkGameOver();
-        } catch (JsonProcessingException e) {
-            // Expected exception
-        }
+        });
 
-        // Assert
+        assertEquals("Serialization failed", exception.getMessage());
+
         verify(mockGame, times(1)).getPlayers();
         verify(mockSerializer, times(1)).serializeGameOver("Player 1 wins the game!");
         verify(mockLogger, times(1)).logInfo("Player 1 wins the game!");
@@ -409,7 +460,7 @@ public class GameServerTest {
      * Tests checkGameOver when a player reaches y=0 and serialization fails.
      */
     @Test
-    void testCheckGameOver_PlayerReachesYZero_SerializationException() throws JsonProcessingException {
+    void testCheckGameOver_PlayerReachesYZero_SerializationException() throws JsonProcessingException, JsonProcessingException {
         // Arrange
         Player player1 = mock(Player.class);
         Player player2 = mock(Player.class);
@@ -430,14 +481,13 @@ public class GameServerTest {
         when(mockSerializer.serializeGameOver("Player 1 has reached y=0 and wins the game!"))
                 .thenThrow(new JsonProcessingException("Serialization failed") {});
 
-        // Act
-        try {
+        // Act & Assert
+        Exception exception = assertThrows(JsonProcessingException.class, () -> {
             gameServer.checkGameOver();
-        } catch (JsonProcessingException e) {
-            // Expected exception
-        }
+        });
 
-        // Assert
+        assertEquals("Serialization failed", exception.getMessage());
+
         verify(mockGame, times(1)).getPlayers();
         verify(mockSerializer, times(1))
                 .serializeGameOver("Player 1 has reached y=0 and wins the game!");

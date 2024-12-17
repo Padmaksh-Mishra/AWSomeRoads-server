@@ -3,23 +3,25 @@ package org.example.model;
 import org.example.config.Config;
 import org.example.model.Player;
 import java.util.Random;
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * This class represents a hazard in the game.
  *
  * Attributes:
- * - id: a unique identifier for the hazard (generated randomly)
+ * - id: a unique identifier for the hazard (incremented)
  * - x: the x-coordinate of the hazard
  * - y: the y-coordinate of the hazard
  * - damage: the amount of damage the hazard causes
  * - isActive: indicates whether the hazard is active in the game
  *
  * Responsibilities:
- * - Randomly generating hazards on the game board
+ * - Generating hazards on the game board with unique IDs
  * - Destroying the hazards when they reach the bottom of the game board or collide with a player
  * - Applying damage to a player when they collide with the hazard
  */
 public class Hazard {
+    private static final AtomicInteger ID_COUNTER = new AtomicInteger(0); // Atomic counter for unique IDs
     private final int id;
     private int x;
     private float y; // Changed y from int to float
@@ -31,13 +33,12 @@ public class Hazard {
     /**
      * Constructor to initialize a Hazard object.
      *
-     * @param id     Unique identifier for the hazard.
      * @param x      X-coordinate of the hazard.
      * @param y      Y-coordinate of the hazard.
      * @param damage Amount of damage the hazard causes.
      */
-    public Hazard(int id, int x, int y, int damage) {
-        this.id = id;
+    public Hazard(int x, float y, int damage) {
+        this.id = ID_COUNTER.getAndIncrement(); // Assign unique incremental ID
         this.x = x;
         this.y = y;
         this.damage = damage;
@@ -88,11 +89,10 @@ public class Hazard {
         if (currentHazardCount >= Config.MAX_HAZARDS) {
             return null;
         }
-        int id = RANDOM.nextInt(Integer.MAX_VALUE);
         int x = RANDOM.nextInt(Config.X_MAX + 1);
-        int y = 0; // Spawn at the top of the game board
+        float y = 0.0f; // Spawn at the top of the game board
         int damage = Config.HAZARD_DAMAGE;
-        return new Hazard(id, x, y, damage);
+        return new Hazard(x, y, damage);
     }
 
     /**
@@ -138,5 +138,12 @@ public class Hazard {
                 '}';
     }
 
-    // Equals and hashCode methods can be added if needed
+    /**
+     * Resets the Hazard ID counter.
+     * Intended for testing purposes only.
+     */
+    public static void resetIdCounter() {
+        ID_COUNTER.set(0);
+    }
+
 }

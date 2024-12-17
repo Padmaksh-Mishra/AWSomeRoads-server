@@ -37,6 +37,8 @@ class GameEngineTest {
 
         // Reset Boost.idCounter to 0 before each test for consistent ID assignments
         Boost.resetIdCounter();
+        // Reset Hazard.idCounter to 0 before each test for consistent ID assignments
+        Hazard.resetIdCounter();
     }
 
     // Helper method for creating mock players
@@ -145,6 +147,30 @@ class GameEngineTest {
         verify(mockLogger).logInfo("Player 6 collected Boost 0 and gained boost power.");
     }
 
+    @Test
+    void testHandleCollisions_PlayerCollidesWithHazard() {
+        // Arrange
+        Player mockPlayer = createMockPlayer(2, 3, 3, 10); // Using Mock
+
+        // Create a spy of Hazard
+        Hazard realHazard = new Hazard(3, 3.0f, Config.HAZARD_DAMAGE); // Initialize with known coordinates
+        Hazard spyHazard = spy(realHazard); // Create a spy
+
+        // Stub methods on the spy
+        when(spyHazard.isActive()).thenReturn(true);
+        when(spyHazard.getId()).thenReturn(0); // Assuming this is the first hazard
+
+        // Set up the game mock
+        when(mockGame.getPlayers()).thenReturn(List.of(mockPlayer));
+        when(mockGame.getHazards()).thenReturn(List.of(spyHazard));
+
+        // Act
+        gameEngine.handleCollisions(mockGame);
+
+        // Assert
+        verify(spyHazard).applyToPlayer(mockPlayer);
+        verify(mockLogger).logWarning("Player 2 collided with Hazard 0 and took " + Config.HAZARD_DAMAGE + " damage.");
+    }
 
     /**
      * Test Case: Player's health reaches zero and y-coordinate penalty applied.
