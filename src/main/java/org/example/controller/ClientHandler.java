@@ -17,12 +17,12 @@ import java.io.IOException;
  * - Sending updated game state to the client
  * - Managing the WebSocket connection
  */
+
 public class ClientHandler implements Runnable {
     private final WebSocket connection;
     private final GameServer server;
     private final int playerId;
     private final Logger logger;
-    private final GameStateSerializer serializer;
     private volatile Input latestInput;
     private volatile boolean isConnected;
     private final ObjectMapper objectMapper;
@@ -33,13 +33,13 @@ public class ClientHandler implements Runnable {
      * @param connection The client's WebSocket connection.
      * @param server     Reference to the GameServer.
      * @param playerId   The unique identifier assigned to the player.
+     * @param logger     The logger instance to be used.
      */
-    public ClientHandler(WebSocket connection, GameServer server, int playerId) {
+    public ClientHandler(WebSocket connection, GameServer server, int playerId, Logger logger) {
         this.connection = connection;
         this.server = server;
         this.playerId = playerId;
-        this.logger = new Logger();
-        this.serializer = new GameStateSerializer();
+        this.logger = logger;
         this.latestInput = null;
         this.isConnected = true;
         this.objectMapper = new ObjectMapper();

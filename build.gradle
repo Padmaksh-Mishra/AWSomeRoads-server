@@ -15,21 +15,34 @@ repositories {
 }
 
 dependencies {
+    // Production dependencies
     implementation 'org.java-websocket:Java-WebSocket:1.5.3'
-    implementation 'com.fasterxml.jackson.core:jackson-core:2.13.0'
-    implementation 'com.fasterxml.jackson.core:jackson-databind:2.13.0'
+    implementation 'com.fasterxml.jackson.core:jackson-core:2.15.2'
+    implementation 'com.fasterxml.jackson.core:jackson-databind:2.15.2'
+    implementation 'org.slf4j:slf4j-simple:1.7.30' // Add the SLF4J Simple binding
+    // Add other production dependencies here
+
+    // Test dependencies
     testImplementation platform('org.junit:junit-bom:5.10.0')
-    testImplementation 'org.junit.jupiter:junit-jupiter'
+    testImplementation 'org.junit.jupiter:junit-jupiter-api:5.10.0'
+    testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.10.0'
+    testImplementation 'org.mockito:mockito-core:5.5.0'
+    testImplementation 'org.mockito:mockito-junit-jupiter:5.5.0'
+    testImplementation 'org.mockito:mockito-inline:4.11.0' // Updated version
+    testImplementation 'com.fasterxml.jackson.core:jackson-core:2.15.2'
+    
+    // If you need assertions beyond JUnit's built-in
+    testImplementation 'org.assertj:assertj-core:3.24.2'
 }
 
-java {
-    sourceCompatibility = JavaVersion.VERSION_17
-    targetCompatibility = JavaVersion.VERSION_17
+ java {
+     sourceCompatibility = JavaVersion.VERSION_17
+     targetCompatibility = JavaVersion.VERSION_17
 
-    toolchain {
-        languageVersion = JavaLanguageVersion.of(17)
-    }
-}
+     toolchain {
+         languageVersion = JavaLanguageVersion.of(17)
+     }
+ }
 
 test {
     useJUnitPlatform()

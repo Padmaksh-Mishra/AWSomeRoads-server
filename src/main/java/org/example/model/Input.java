@@ -1,6 +1,8 @@
 package org.example.model;
 
 import java.util.List;
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonProperty;
 
 /**
  * This class represents the input actions sent by a player.
@@ -12,17 +14,16 @@ import java.util.List;
  * Responsibilities:
  * - Encapsulate the player actions to be sent to the server.
  */
+
 public class Input {
     private final int playerId;
     private final List<PlayerAction> actions;
 
-    /**
-     * Constructor to initialize an Input object.
-     *
-     * @param playerId The unique identifier of the player.
-     * @param actions  The list of actions taken by the player.
-     */
-    public Input(int playerId, List<PlayerAction> actions) {
+    @JsonCreator
+    public Input(
+        @JsonProperty("playerId") int playerId,
+        @JsonProperty("actions") List<PlayerAction> actions
+    ) {
         this.playerId = playerId;
         this.actions = actions;
     }

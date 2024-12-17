@@ -18,6 +18,7 @@ import org.example.config.Config;
  * - Updating the player's health as directed by the GameEngine
  * - Providing the current player state to the GameEngine
  */
+
 public class Player {
     private final int id;
     private int x;

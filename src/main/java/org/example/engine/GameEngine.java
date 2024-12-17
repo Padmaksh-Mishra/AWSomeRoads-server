@@ -30,7 +30,11 @@ import java.util.List;
 
 public class GameEngine {
 
-    private final Logger logger = new Logger();
+    private final Logger logger;
+
+    public GameEngine(Logger logger) {
+        this.logger = logger;
+    }
 
     /**
      * Updates the game state based on the inputs received from the clients.
@@ -51,7 +55,7 @@ public class GameEngine {
      * @param game   The current game state.
      * @param inputs A list of inputs from all players.
      */
-    private void updatePlayerActions(Game game, List<Input> inputs) {
+    public void updatePlayerActions(Game game, List<Input> inputs) {
         for (Input input : inputs) {
             Player player = game.getPlayerById(input.getPlayerId());
             if (player == null || player.isDisqualified()) {

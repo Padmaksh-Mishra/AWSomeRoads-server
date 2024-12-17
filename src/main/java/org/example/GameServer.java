@@ -34,10 +34,10 @@ public class GameServer extends WebSocketServer {
     private static final int TICK_RATE = Config.TICK_RATE; // Game update interval in milliseconds
     private static final int MIN_PLAYERS = Config.MAX_PLAYERS; // Minimum players to start the game
 
-    private final Game game;
+    private Game game;
     private final Simulator simulator;
-    private final GameStateSerializer serializer;
-    private final Logger logger;
+    private GameStateSerializer serializer;
+    private Logger logger = new Logger();
     private final ExecutorService clientThreadPool;
     private final List<ClientHandler> clientHandlers;
     private final ScheduledExecutorService gameLoopExecutor;
@@ -50,10 +50,9 @@ public class GameServer extends WebSocketServer {
     public GameServer() {
         super(new InetSocketAddress(PORT));
         this.game = new Game();
-        GameEngine gameEngine = new GameEngine();
+        GameEngine gameEngine = new GameEngine(logger);
         this.simulator = new Simulator(gameEngine);
         this.serializer = new GameStateSerializer();
-        this.logger = new Logger();
         this.clientThreadPool = Executors.newCachedThreadPool();
         this.clientHandlers = Collections.synchronizedList(new ArrayList<>());
         this.gameLoopExecutor = Executors.newSingleThreadScheduledExecutor();
@@ -82,7 +81,7 @@ public class GameServer extends WebSocketServer {
         // Assign a unique player ID
         int playerId = playerIdCounter++;
         // Create and start a new ClientHandler
-        ClientHandler handler = new ClientHandler(conn, this, playerId);
+        ClientHandler handler = new ClientHandler(conn, this, playerId, logger);
         clientHandlers.add(handler);
         clientThreadPool.execute(handler);
 
@@ -162,7 +161,7 @@ public class GameServer extends WebSocketServer {
     /**
      * Starts the main game loop which updates and broadcasts the game state at fixed intervals.
      */
-    private void startGameLoop() {
+    void startGameLoop() {
         gameLoopExecutor.scheduleAtFixedRate(() -> {
             try {
                 // Gather all inputs from client handlers
@@ -205,7 +204,7 @@ public class GameServer extends WebSocketServer {
      *
      * @param gameState The serialized game state as a JSON string.
      */
-    private void broadcastGameState(String gameState) {
+    void broadcastGameState(String gameState) {
         for (ClientHandler handler : clientHandlers) {
             handler.sendGameState(gameState);
         }
@@ -214,7 +213,7 @@ public class GameServer extends WebSocketServer {
     /**
      * Checks if the game has concluded and declares the winner if conditions are met.
      */
-    private void checkGameOver() throws JsonProcessingException {
+    void checkGameOver() throws JsonProcessingException {
         if (!gameStarted) {
             // Do not check for game over if the game hasn't started
             return;
@@ -235,8 +234,8 @@ public class GameServer extends WebSocketServer {
             shutdown();
         } else {
             for (Player player : activePlayers) {
-                if (player.getX() == 0) {
-                    String winnerMessage = "Player " + player.getId() + " has reached x=0 and wins the game!";
+                if (player.getY() == 0) {
+                    String winnerMessage = "Player " + player.getId() + " has reached y=0 and wins the game!";
                     logger.logInfo(winnerMessage);
                     broadcastGameState(serializer.serializeGameOver(winnerMessage));
                     shutdown();
@@ -249,7 +248,7 @@ public class GameServer extends WebSocketServer {
     /**
      * Shuts down the server gracefully.
      */
-    private void shutdown() {
+    void shutdown() {
         try {
             gameLoopExecutor.shutdown();
             clientThreadPool.shutdownNow();
@@ -273,11 +272,32 @@ public class GameServer extends WebSocketServer {
         logger.logInfo("Removed ClientHandler for Player " + handler.getPlayerId());
     }
 
+    // Setter methods for testing
+    public void setGame(Game game) {
+        this.game = game;
+    }
+
+    public void setLogger(Logger logger) {
+        this.logger = logger;
+    }
+
+    public void setSerializer(GameStateSerializer serializer) {
+        this.serializer = serializer;
+    }
+
+    public void setGameStarted(boolean gameStarted) {
+        this.gameStarted = gameStarted;
+    }
+
+    public List<ClientHandler> getClientHandlers() {
+        return clientHandlers;
+    }
     /**
      * Main method to start the GameServer.
      *
      * @param args Command-line arguments.
      */
+
     public static void main(String[] args) {
         GameServer server = new GameServer();
         server.start();
