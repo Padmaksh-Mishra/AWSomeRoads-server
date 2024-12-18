@@ -11,7 +11,6 @@ AWSomeRoads is an engaging multiplayer game backend built with Java, designed to
 - [Testing](#testing)
 - [Future Enhancements](#future-enhancements)
 - [Contributing](#contributing)
-- [License](#license)
 
 ## Features
 
